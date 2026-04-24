@@ -1,11 +1,112 @@
 <!DOCTYPE html>
-<html lang  = "pt">
+<html lang="pt-BR">
 <head>
-    <title>Meu Site</title>
-</head> 
-<body>
-    <h1>Bem-vindo ao Meu Site</h1>
-    <p>Este é um exemplo de site simples usando HTML.</p>
-</body>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeoSite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/home.css">
+</head>
+<body class="home-page">
+  <div class="page-shell">
+    <header class="hero">
+      <nav class="topbar">
+        <span class="brand">LeoSite</span>
+        <div class="topbar-actions">
+          <button
+            class="theme-toggle"
+            id="themeToggle"
+            type="button"
+            aria-label="Alternar tema"
+            title="Alternar tema"
+          >
+            <span class="theme-toggle-icon sun-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="4.2"></circle>
+                <path d="M12 2.5v2.2M12 19.3v2.2M4.9 4.9l1.5 1.5M17.6 17.6l1.5 1.5M2.5 12h2.2M19.3 12h2.2M4.9 19.1l1.5-1.5M17.6 6.4l1.5-1.5"></path>
+              </svg>
+            </span>
+            <span class="theme-toggle-icon moon-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M20.2 14.2A8.6 8.6 0 0 1 9.8 3.8a8.9 8.9 0 1 0 10.4 10.4Z"></path>
+              </svg>
+            </span>
+          </button>
+          <a class="nav-link" href="game.html">Jogar padaria</a>
+        </div>
+      </nav>
 
+      <section class="hero-content">
+        <div class="hero-copy">
+          <p class="eyebrow">Espaco para projetos, ideias e diversao</p>
+          <h1>Uma home amigavel para reunir projetos e abrir caminho para a Padaria dos Sonhos.</h1>
+          <p class="description">
+            A pagina principal agora fica mais leve e organizada: ela apresenta o site, destaca o
+            jogo e leva para uma experiencia separada, mais imersiva e pensada so para jogar.
+          </p>
+
+          <div class="hero-actions">
+            <a class="primary-button" href="game.html">Entrar no jogo</a>
+            <a class="secondary-button" href="#projetos">Explorar a home</a>
+          </div>
+        </div>
+
+        <aside class="highlight-card">
+          <span class="card-label">Destaque</span>
+          <h2>Padaria dos sonhos</h2>
+          <p>
+            Um idle clicker aconchegante com progresso salvo, producao offline e uma pagina propria
+            para voce deixar aberta enquanto faz outras coisas.
+          </p>
+        </aside>
+      </section>
+    </header>
+
+    <main>
+      <section class="section-grid" id="projetos">
+        <article class="info-card">
+          <h3>Separado e mais limpo</h3>
+          <p>
+            A home volta a funcionar como porta de entrada do site, enquanto o jogo ganha um espaco
+            dedicado para interface, progresso e atmosfera propria.
+          </p>
+        </article>
+
+        <article class="info-card">
+          <h3>Jogo relaxante</h3>
+          <p>
+            A proposta continua sendo um idle clicker amigavel, simples de entender e gostoso de
+            acompanhar ao longo do dia sem exigir atencao o tempo todo.
+          </p>
+        </article>
+
+        <article class="info-card">
+          <h3>Base para crescer</h3>
+          <p>
+            A estrutura agora esta melhor para receber novas paginas, mais projetos e futuras
+            expansoes do jogo sem misturar tudo na tela inicial.
+          </p>
+        </article>
+      </section>
+
+      <section class="home-game-teaser">
+        <div class="teaser-copy">
+          <p class="eyebrow">Proximo clique</p>
+          <h2>Entre na padaria e deixe o forno trabalhar por voce.</h2>
+          <p>
+            A pagina do jogo traz os indicadores, melhorias, autosave e uma apresentacao visual mais
+            viva da padaria. O progresso continua salvo no navegador.
+          </p>
+        </div>
+        <a class="primary-button" href="game.html">Abrir a Padaria dos Sonhos</a>
+      </section>
+    </main>
+  </div>
+
+  <script src="scripts/theme.js"></script>
+  <script src="scripts/home.js"></script>
+</body>
 </html>
