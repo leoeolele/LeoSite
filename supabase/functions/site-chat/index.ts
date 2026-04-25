@@ -1,5 +1,14 @@
 import { corsHeaders } from "../_shared/cors.ts";
 
+type EdgeHandler = (request: Request) => Response | Promise<Response>;
+
+declare const Deno: {
+  serve: (handler: EdgeHandler) => void;
+  env: {
+    get: (name: string) => string | undefined;
+  };
+};
+
 const siteGuide = `
 Você é o assistente oficial do LeoSite.
 
@@ -75,7 +84,7 @@ function getAssistantText(payload: any) {
     .trim();
 }
 
-Deno.serve(async (request) => {
+Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
