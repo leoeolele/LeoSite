@@ -9,11 +9,11 @@ somente sobre o proprio site.
 
 ### O que precisa configurar
 
-1. Criar uma chave da OpenAI.
+1. Criar uma chave da Gemini API no Google AI Studio.
 2. Salvar os secrets no Supabase:
 
 ```bash
-supabase secrets set OPENAI_API_KEY=sua_chave_aqui OPENAI_MODEL=gpt-5.4-nano --project-ref ddsrwujpgnedozkljkpw
+supabase secrets set GEMINI_API_KEY=sua_chave_aqui GEMINI_MODEL=gemini-2.5-flash --project-ref ddsrwujpgnedozkljkpw
 ```
 
 3. Publicar a Edge Function:
@@ -30,4 +30,4 @@ supabase functions deploy site-chat --project-ref ddsrwujpgnedozkljkpw
 
 ### Observacao importante
 
-Nao coloque a chave da OpenAI no frontend. O site chama apenas a Edge Function do Supabase.
+Nao coloque a chave da Gemini API no frontend. O site chama apenas a Edge Function do Supabase.
