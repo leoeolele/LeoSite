@@ -97,6 +97,12 @@ body {
   text-decoration: none;
 }
 
+a,
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
 .theme-toggle {
   position: relative;
   display: inline-flex;
@@ -243,6 +249,7 @@ h3 {
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, opacity 180ms ease;
 }
 
