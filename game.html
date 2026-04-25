@@ -44,8 +44,8 @@
           <p class="eyebrow">Padaria idle</p>
           <h1>Padaria dos Sonhos</h1>
           <p class="description">
-            Um clicker calmo para deixar aberto enquanto voce trabalha, estuda ou so quer ver a sua
-            vitrine enchendo de fornadas quentinhas.
+            Um clicker calmo para deixar aberto enquanto você trabalha, estuda ou só quer ver a sua
+            vitrine enchendo de pães quentinhos.
           </p>
 
           <div class="player-card">
@@ -53,7 +53,7 @@
             <div class="player-card-row">
               <div class="player-identity">
                 <strong id="playerNameDisplay">Convidado</strong>
-                <span class="player-account-type" id="accountModeDisplay">Nao conectado</span>
+                <span class="player-account-type" id="accountModeDisplay">Não conectado</span>
               </div>
               <button class="secondary-button compact-button" id="renamePlayerButton" type="button">Trocar apelido</button>
             </div>
@@ -81,17 +81,17 @@
       <section class="game-panel" id="jogo">
         <div class="game-header">
           <div class="game-copy">
-            <p class="eyebrow">Gerencie a producao</p>
+            <p class="eyebrow">Gerencie a produção</p>
             <h2>Asse, venda e automatize sua padaria.</h2>
             <p>
-              Clique na grande fornada para vender paes, contrate ajuda para manter as moedas
-              chegando e acompanhe a vitrine da padaria ganhar vida.
+              Clique no forno para assar pães, desbloqueie novas receitas e acompanhe a padaria
+              crescer com tipos de pão cada vez mais valiosos.
             </p>
           </div>
 
           <div class="game-badges">
             <span class="game-badge">Save no Supabase</span>
-            <span class="game-badge">Producao offline</span>
+            <span class="game-badge">Progresso salvo</span>
             <span class="game-badge">Leaderboard online</span>
           </div>
         </div>
@@ -99,9 +99,9 @@
         <div class="game-layout">
           <section class="bakery-clicker">
             <div class="resource-card hero-resource">
-              <p class="resource-label">Moedas da padaria</p>
-              <strong class="resource-value" id="coinsValue">0</strong>
-              <p class="resource-meta">Por clique: <span id="clickValue">1</span></p>
+              <p class="resource-label">Total de pães</p>
+              <strong class="resource-value" id="breadStockValue">0</strong>
+              <p class="resource-meta">Pães por clique: <span id="clickValue">1</span></p>
             </div>
 
             <button class="bakery-button" id="bakeButton" type="button">
@@ -110,13 +110,13 @@
                 <span class="bun bun-middle"></span>
                 <span class="bun bun-bottom"></span>
               </span>
-              <span class="bakery-button-title">Assar fornada</span>
-              <span class="bakery-button-subtitle">Clique para vender paes quentinhos</span>
+              <span class="bakery-button-title">Assar pães</span>
+              <span class="bakery-button-subtitle">Clique para tirar mais pães quentinhos do forno</span>
             </button>
 
             <div class="resource-grid">
               <article class="resource-card small">
-                <p class="resource-label">Por segundo</p>
+                <p class="resource-label">Pães por segundo</p>
                 <strong class="resource-value" id="perSecondValue">0</strong>
               </article>
               <article class="resource-card small">
@@ -124,12 +124,12 @@
                 <strong class="resource-value" id="totalClicksValue">0</strong>
               </article>
               <article class="resource-card small">
-                <p class="resource-label">Fornadas</p>
-                <strong class="resource-value" id="breadValue">0</strong>
+                <p class="resource-label">Receitas desbloqueadas</p>
+                <strong class="resource-value" id="recipesValue">1</strong>
               </article>
               <article class="resource-card small">
-                <p class="resource-label">Faturamento</p>
-                <strong class="resource-value" id="totalEarnedValue">0</strong>
+                <p class="resource-label">Melhorias compradas</p>
+                <strong class="resource-value" id="upgradesCountValue">0</strong>
               </article>
             </div>
 
@@ -140,14 +140,14 @@
               <span class="shelf-dot"></span>
             </div>
 
-            <p class="offline-note" id="offlineNote">Seu progresso e salvo automaticamente.</p>
+            <p class="offline-note" id="offlineNote">Seu progresso é salvo exatamente como você deixou.</p>
           </section>
 
           <div class="side-stack">
             <section class="upgrades-panel">
               <div class="panel-heading">
-                <h3>Melhorias da padaria</h3>
-                <p>Compre upgrades para acelerar o crescimento.</p>
+                <h3>Receitas e melhorias</h3>
+                <p>Uma melhoria de clique e vários tipos de pão para expandir a padaria.</p>
               </div>
               <div class="upgrade-list" id="upgradesList"></div>
             </section>
@@ -155,7 +155,7 @@
             <section class="leaderboard-panel">
               <div class="panel-heading">
                 <h3>Leaderboard global</h3>
-                <p>Ranking por faturamento total da padaria.</p>
+                <p>Ranking por quantidade atual de pães guardados na padaria.</p>
               </div>
               <p class="leaderboard-status" id="leaderboardStatus">Conectando com o ranking online...</p>
               <ol class="leaderboard-list" id="leaderboardList"></ol>
@@ -171,17 +171,17 @@
       <p class="eyebrow">Salvamento online</p>
       <h2 id="playerModalTitle">Escolha como quer salvar o progresso.</h2>
       <p class="description">
-        Voce pode usar um apelido simples ou entrar com Google para vincular o progresso a uma conta.
+        Você pode usar um apelido simples ou entrar com Google para vincular o progresso a uma conta.
       </p>
 
       <div class="auth-choice-grid" id="authChoiceGrid">
         <button class="auth-choice" id="nicknameChoiceButton" type="button">
           <strong>Salvar com apelido</strong>
-          <span>Cria uma conta anonima no Supabase e usa o nome que voce escolher.</span>
+          <span>Cria uma conta anônima no Supabase e usa o nome que você escolher.</span>
         </button>
         <button class="auth-choice google-choice" id="googleChoiceButton" type="button">
           <strong>Entrar com Google</strong>
-          <span>Usa sua conta Google e salva o progresso no mesmo usuario.</span>
+          <span>Usa sua conta Google e salva o progresso no mesmo usuário.</span>
         </button>
       </div>
 

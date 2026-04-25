@@ -18,12 +18,12 @@ const googleChoiceButton = document.getElementById("googleChoiceButton");
 const authChoiceGrid = document.getElementById("authChoiceGrid");
 const backToAuthOptionsButton = document.getElementById("backToAuthOptionsButton");
 
-const coinsValue = document.getElementById("coinsValue");
+const breadStockValue = document.getElementById("breadStockValue");
 const clickValue = document.getElementById("clickValue");
 const perSecondValue = document.getElementById("perSecondValue");
 const totalClicksValue = document.getElementById("totalClicksValue");
-const breadValue = document.getElementById("breadValue");
-const totalEarnedValue = document.getElementById("totalEarnedValue");
+const recipesValue = document.getElementById("recipesValue");
+const upgradesCountValue = document.getElementById("upgradesCountValue");
 
 const saveStorageKey = "leosite-bakery-save";
 const playerNameStorageKey = "leosite-bakery-player-name";
@@ -41,74 +41,77 @@ const hasSupabaseConfig =
 let supabase = null;
 let currentPlayerId = null;
 let currentAuthMode = "guest";
-let currentUserEmail = "";
-let lastSyncedScore = -1;
+let lastSyncedScore = null;
 let syncTimer = null;
+let nicknameNotice = "";
 
 const upgradeDefinitions = [
   {
-    id: "rolling_pin",
-    name: "Rolo de massa melhor",
-    description: "+1 moeda por clique.",
-    baseCost: 15,
-    costScale: 1.55,
+    id: "baker_hands",
+    name: "M\u00e3os mais r\u00e1pidas",
+    icon: "\u{1F956}",
+    description: "+1 p\u00e3o por clique.",
+    baseCost: 18,
+    costScale: 1.8,
     type: "click",
     value: 1
   },
   {
-    id: "assistant_baker",
-    name: "Ajudante de forno",
-    description: "+1 moeda por segundo.",
-    baseCost: 40,
-    costScale: 1.6,
-    type: "idle",
+    id: "french_bread",
+    name: "P\u00e3o franc\u00eas",
+    icon: "\u{1F950}",
+    description: "+1 p\u00e3o por segundo com a receita mais cl\u00e1ssica da casa.",
+    baseCost: 45,
+    costScale: 1.72,
+    type: "bread",
     value: 1
   },
   {
-    id: "warm_oven",
-    name: "Forno aquecido",
-    description: "+3 moedas por clique.",
-    baseCost: 120,
-    costScale: 1.7,
-    type: "click",
+    id: "milk_bread",
+    name: "P\u00e3o de leite",
+    icon: "\u{1F35E}",
+    description: "+3 p\u00e3es por segundo com uma receita macia e popular.",
+    baseCost: 190,
+    costScale: 1.8,
+    type: "bread",
     value: 3
   },
   {
-    id: "delivery_bike",
-    name: "Entrega de bicicleta",
-    description: "+4 moedas por segundo.",
-    baseCost: 220,
-    costScale: 1.75,
-    type: "idle",
-    value: 4
-  },
-  {
-    id: "sweet_showcase",
-    name: "Vitrine de doces",
-    description: "+8 moedas por clique.",
-    baseCost: 480,
-    costScale: 1.85,
-    type: "click",
-    value: 8
-  },
-  {
-    id: "night_shift",
-    name: "Turno da noite",
-    description: "+10 moedas por segundo.",
-    baseCost: 900,
+    id: "whole_bread",
+    name: "P\u00e3o integral",
+    icon: "\u{1F33E}",
+    description: "+9 p\u00e3es por segundo com uma receita mais encorpada.",
+    baseCost: 850,
     costScale: 1.9,
-    type: "idle",
-    value: 10
+    type: "bread",
+    value: 9
+  },
+  {
+    id: "brioche",
+    name: "Brioche",
+    icon: "\u{1F9C8}",
+    description: "+26 p\u00e3es por segundo com uma massa rica e delicada.",
+    baseCost: 3800,
+    costScale: 2.02,
+    type: "bread",
+    value: 26
+  },
+  {
+    id: "sourdough",
+    name: "P\u00e3o de fermenta\u00e7\u00e3o natural",
+    icon: "\u{1F525}",
+    description: "+80 p\u00e3es por segundo, mas custa bem mais para dominar.",
+    baseCost: 18000,
+    costScale: 2.18,
+    type: "bread",
+    value: 80
   }
 ];
 
 function createInitialState() {
   return {
-    coins: 0,
     breads: 0,
     totalClicks: 0,
-    totalEarned: 0,
-    bestScore: 0,
     lastSavedAt: Date.now(),
     upgrades: Object.fromEntries(upgradeDefinitions.map((upgrade) => [upgrade.id, 0]))
   };
@@ -116,10 +119,24 @@ function createInitialState() {
 
 function normalizeGameState(rawState) {
   const baseState = createInitialState();
+  const legacyBreads =
+    typeof rawState?.breads === "number"
+      ? rawState.breads
+      : typeof rawState?.coins === "number"
+        ? rawState.coins
+        : 0;
+  const legacyTotalClicks =
+    typeof rawState?.totalClicks === "number"
+      ? rawState.totalClicks
+      : typeof rawState?.manualBakes === "number"
+        ? rawState.manualBakes
+        : 0;
 
   return {
     ...baseState,
     ...rawState,
+    breads: legacyBreads,
+    totalClicks: legacyTotalClicks,
     upgrades: {
       ...baseState.upgrades,
       ...(rawState?.upgrades || {})
@@ -135,18 +152,7 @@ function loadLocalBackup() {
   }
 
   try {
-    const parsedSave = JSON.parse(rawSave);
-    const normalized = normalizeGameState(parsedSave);
-
-    if (typeof normalized.totalEarned !== "number") {
-      normalized.totalEarned = parsedSave.coins || 0;
-    }
-
-    if (typeof normalized.bestScore !== "number") {
-      normalized.bestScore = normalized.totalEarned;
-    }
-
-    return normalized;
+    return normalizeGameState(JSON.parse(rawSave));
   } catch (error) {
     return createInitialState();
   }
@@ -163,6 +169,11 @@ function setPlayerName(name) {
   updateAccountUi();
 }
 
+function setNicknameNotice(message = "") {
+  nicknameNotice = message;
+  updateAccountUi();
+}
+
 function updateAccountUi() {
   const storedName = getPlayerName();
   const finalName = storedName || (currentAuthMode === "google" ? "Defina seu nick" : "Convidado");
@@ -173,20 +184,24 @@ function updateAccountUi() {
 
   if (accountModeDisplay) {
     accountModeDisplay.textContent =
-      currentAuthMode === "google"
+          currentAuthMode === "google"
         ? "Google"
         : currentAuthMode === "nickname"
           ? "Apelido"
-          : "Nao conectado";
+          : "N\u00e3o conectado";
   }
 
   if (playerHelpText) {
-    playerHelpText.textContent =
-      currentAuthMode === "google"
-        ? "Sua conta Google recupera o progresso, mas o nome publico do jogo continua sendo seu nick."
-        : currentAuthMode === "nickname"
-          ? "Seu progresso esta salvo no Supabase com conta anonima e apelido."
-          : "Escolha entre salvar com apelido ou entrar com Google.";
+    if (nicknameNotice) {
+      playerHelpText.textContent = nicknameNotice;
+    } else {
+      playerHelpText.textContent =
+        currentAuthMode === "google"
+          ? "Sua conta Google recupera o progresso, mas o nome p\u00fablico do jogo continua sendo seu nick."
+          : currentAuthMode === "nickname"
+            ? "Seu progresso est\u00e1 salvo no Supabase com conta an\u00f4nima e apelido."
+            : "Escolha entre salvar com apelido ou entrar com Google.";
+    }
   }
 
   if (renamePlayerButton) {
@@ -245,33 +260,74 @@ function getUpgradeLevel(upgradeId) {
   return gameState.upgrades[upgradeId] || 0;
 }
 
+function buildCandidateName(baseName, attempt) {
+  const maxLength = 24;
+
+  if (attempt <= 1) {
+    return baseName.slice(0, maxLength).trim();
+  }
+
+  const suffix = ` (${attempt})`;
+  const availableLength = Math.max(1, maxLength - suffix.length);
+
+  return `${baseName.slice(0, availableLength).trimEnd()}${suffix}`;
+}
+
+async function resolveUniquePlayerName(requestedName) {
+  if (!supabase) {
+    return requestedName;
+  }
+
+  const normalizedBaseName = requestedName.trim();
+
+  for (let attempt = 1; attempt <= 99; attempt += 1) {
+    const candidateName = buildCandidateName(normalizedBaseName, attempt);
+    const { data, error } = await supabase
+      .from(leaderboardTable)
+      .select("player_id, player_name")
+      .ilike("player_name", candidateName);
+
+    if (error) {
+      return candidateName;
+    }
+
+    const hasConflict = (data || []).some((entry) => entry.player_id !== currentPlayerId);
+
+    if (!hasConflict) {
+      return candidateName;
+    }
+  }
+
+  return buildCandidateName(normalizedBaseName, Math.floor(Math.random() * 900) + 100);
+}
+
 function getUpgradeCost(upgrade) {
   const level = getUpgradeLevel(upgrade.id);
   return Math.floor(upgrade.baseCost * upgrade.costScale ** level);
 }
 
-function getCoinsPerClick() {
-  let total = 1;
-
-  upgradeDefinitions.forEach((upgrade) => {
-    if (upgrade.type === "click") {
-      total += upgrade.value * getUpgradeLevel(upgrade.id);
-    }
-  });
-
-  return total;
+function getBreadsPerClick() {
+  return 1 + getUpgradeLevel("baker_hands");
 }
 
-function getCoinsPerSecond() {
-  let total = 0;
-
-  upgradeDefinitions.forEach((upgrade) => {
-    if (upgrade.type === "idle") {
-      total += upgrade.value * getUpgradeLevel(upgrade.id);
+function getBreadsPerSecond() {
+  return upgradeDefinitions.reduce((total, upgrade) => {
+    if (upgrade.type !== "bread") {
+      return total;
     }
-  });
 
-  return total;
+    return total + upgrade.value * getUpgradeLevel(upgrade.id);
+  }, 0);
+}
+
+function getUnlockedRecipes() {
+  return (
+    upgradeDefinitions.filter((upgrade) => upgrade.type === "bread" && getUpgradeLevel(upgrade.id) > 0).length + 1
+  );
+}
+
+function getPurchasedUpgradesCount() {
+  return upgradeDefinitions.reduce((total, upgrade) => total + getUpgradeLevel(upgrade.id), 0);
 }
 
 function formatNumber(value) {
@@ -285,10 +341,8 @@ function saveLocalBackup() {
   localStorage.setItem(saveStorageKey, JSON.stringify(gameState));
 }
 
-function updateEarnings(amount) {
-  gameState.coins += amount;
-  gameState.totalEarned += amount;
-  gameState.bestScore = Math.max(gameState.bestScore, gameState.totalEarned);
+function addBread(amount) {
+  gameState.breads += amount;
 }
 
 function renderUpgrades() {
@@ -301,47 +355,102 @@ function renderUpgrades() {
   upgradeDefinitions.forEach((upgrade) => {
     const level = getUpgradeLevel(upgrade.id);
     const cost = getUpgradeCost(upgrade);
-    const canBuy = gameState.coins >= cost;
+    const canBuy = gameState.breads >= cost;
 
     const card = document.createElement("article");
     card.className = `upgrade-card${canBuy ? "" : " is-locked"}`;
 
     const info = document.createElement("div");
+    info.className = "upgrade-info";
+
+    const topRow = document.createElement("div");
+    topRow.className = "upgrade-top-row";
+
+    const icon = document.createElement("span");
+    icon.className = "upgrade-icon";
+    icon.textContent = upgrade.icon;
+
+    const textGroup = document.createElement("div");
+    textGroup.className = "upgrade-text";
+
     const title = document.createElement("h4");
+    title.textContent = `${upgrade.name} - N\u00edvel ${level}`;
+
     const text = document.createElement("p");
+    text.textContent = `${upgrade.description} Custo: ${formatNumber(cost)} p\u00e3es.`;
+
     const button = document.createElement("button");
-
-    title.textContent = `${upgrade.name} - Nv. ${level}`;
-    text.textContent = `${upgrade.description} Custo: ${formatNumber(cost)} moedas.`;
-
     button.className = "upgrade-buy";
     button.type = "button";
     button.textContent = "Comprar";
     button.disabled = !canBuy;
     button.addEventListener("click", () => buyUpgrade(upgrade.id));
 
-    info.append(title, text);
+    textGroup.append(title, text);
+    topRow.append(icon, textGroup);
+    info.append(topRow);
     card.append(info, button);
     upgradesList.append(card);
   });
 }
 
 function renderGame() {
-  coinsValue.textContent = formatNumber(gameState.coins);
-  clickValue.textContent = formatNumber(getCoinsPerClick());
-  perSecondValue.textContent = formatNumber(getCoinsPerSecond());
-  totalClicksValue.textContent = formatNumber(gameState.totalClicks);
-  breadValue.textContent = formatNumber(gameState.breads);
-  totalEarnedValue.textContent = formatNumber(gameState.totalEarned);
+  if (breadStockValue) {
+    breadStockValue.textContent = formatNumber(gameState.breads);
+  }
+
+  if (clickValue) {
+    clickValue.textContent = formatNumber(getBreadsPerClick());
+  }
+
+  if (perSecondValue) {
+    perSecondValue.textContent = formatNumber(getBreadsPerSecond());
+  }
+
+  if (totalClicksValue) {
+    totalClicksValue.textContent = formatNumber(gameState.totalClicks);
+  }
+
+  if (recipesValue) {
+    recipesValue.textContent = formatNumber(getUnlockedRecipes());
+  }
+
+  if (upgradesCountValue) {
+    upgradesCountValue.textContent = formatNumber(getPurchasedUpgradesCount());
+  }
+
   renderUpgrades();
 }
 
-function bakeBread() {
-  const perClick = getCoinsPerClick();
+function spawnClickEffect(event, amount) {
+  if (!bakeButton) {
+    return;
+  }
 
-  updateEarnings(perClick);
-  gameState.breads += 1;
+  const effect = document.createElement("span");
+  const buttonRect = bakeButton.getBoundingClientRect();
+  const fallbackX = buttonRect.width / 2;
+  const fallbackY = buttonRect.height / 2;
+  const offsetX = typeof event?.clientX === "number" ? event.clientX - buttonRect.left : fallbackX;
+  const offsetY = typeof event?.clientY === "number" ? event.clientY - buttonRect.top : fallbackY;
+
+  effect.className = "click-bread-effect";
+  effect.textContent = amount > 1 ? `\u{1F956} +${amount}` : "\u{1F956}";
+  effect.style.left = `${offsetX}px`;
+  effect.style.top = `${offsetY}px`;
+
+  bakeButton.append(effect);
+  window.setTimeout(() => {
+    effect.remove();
+  }, 900);
+}
+
+function bakeBread(event) {
+  const perClick = getBreadsPerClick();
+
+  addBread(perClick);
   gameState.totalClicks += 1;
+  spawnClickEffect(event, perClick);
 
   renderGame();
   saveLocalBackup();
@@ -357,11 +466,11 @@ function buyUpgrade(upgradeId) {
 
   const cost = getUpgradeCost(upgrade);
 
-  if (gameState.coins < cost) {
+  if (gameState.breads < cost) {
     return;
   }
 
-  gameState.coins -= cost;
+  gameState.breads -= cost;
   gameState.upgrades[upgradeId] = getUpgradeLevel(upgradeId) + 1;
 
   renderGame();
@@ -370,20 +479,8 @@ function buyUpgrade(upgradeId) {
 }
 
 function applyOfflineProgress() {
-  const now = Date.now();
-  const elapsedSeconds = Math.max(0, Math.floor((now - (gameState.lastSavedAt || now)) / 1000));
-  const perSecond = getCoinsPerSecond();
-  const cappedSeconds = Math.min(elapsedSeconds, 60 * 60 * 8);
-  const offlineCoins = cappedSeconds * perSecond;
-
-  if (offlineCoins > 0) {
-    updateEarnings(offlineCoins);
-
-    if (offlineNote) {
-      offlineNote.textContent = `Enquanto voce esteve fora, a padaria produziu ${formatNumber(offlineCoins)} moedas em ${formatNumber(cappedSeconds)} segundos.`;
-    }
-  } else if (offlineNote) {
-    offlineNote.textContent = "Seu progresso e salvo automaticamente.";
+  if (offlineNote) {
+    offlineNote.textContent = "Seu progresso \u00e9 salvo exatamente como voc\u00ea deixou.";
   }
 }
 
@@ -415,7 +512,7 @@ function renderLeaderboard(entries = []) {
     name.textContent = entry.player_name;
 
     const meta = document.createElement("span");
-    meta.textContent = `${formatNumber(entry.best_score)} pontos`;
+    meta.textContent = `${formatNumber(entry.best_score)} p\u00e3es`;
 
     info.append(name, meta);
     item.append(position, info);
@@ -439,7 +536,7 @@ async function loadLeaderboard() {
     .limit(10);
 
   if (error) {
-    setLeaderboardStatus("Nao foi possivel carregar o ranking agora.");
+    setLeaderboardStatus("N\u00e3o foi poss\u00edvel carregar o ranking agora.");
     renderLeaderboard([]);
     return;
   }
@@ -455,9 +552,9 @@ async function syncLeaderboard(force = false) {
     return;
   }
 
-  const score = Math.floor(gameState.bestScore);
+  const score = Math.floor(gameState.breads);
 
-  if (!force && score <= lastSyncedScore) {
+  if (!force && score === lastSyncedScore) {
     return;
   }
 
@@ -466,7 +563,7 @@ async function syncLeaderboard(force = false) {
     player_name: playerName,
     auth_mode: currentAuthMode,
     best_score: score,
-    breads_baked: Math.floor(gameState.breads),
+    breads_baked: score,
     updated_at: new Date().toISOString()
   };
 
@@ -475,12 +572,12 @@ async function syncLeaderboard(force = false) {
     .upsert(payload, { onConflict: "player_id" });
 
   if (error) {
-    setLeaderboardStatus("Falha ao enviar sua pontuacao.");
+    setLeaderboardStatus("Falha ao enviar sua pontua\u00e7\u00e3o.");
     return;
   }
 
   lastSyncedScore = score;
-  setLeaderboardStatus("Sua pontuacao online foi sincronizada.");
+  setLeaderboardStatus("Sua pontua\u00e7\u00e3o online foi sincronizada.");
   await loadLeaderboard();
 }
 
@@ -500,6 +597,16 @@ async function loadRemoteSave() {
   }
 
   if (!data?.progress) {
+    const { data: leaderboardEntry } = await supabase
+      .from(leaderboardTable)
+      .select("player_name")
+      .eq("player_id", currentPlayerId)
+      .maybeSingle();
+
+    if (leaderboardEntry?.player_name) {
+      setPlayerName(leaderboardEntry.player_name);
+    }
+
     await saveRemoteProgress();
     return;
   }
@@ -512,7 +619,7 @@ async function loadRemoteSave() {
     gameState = remoteState;
   }
 
-  if (currentAuthMode === "nickname" && data.player_name) {
+  if (data.player_name) {
     setPlayerName(data.player_name);
   }
 
@@ -559,7 +666,6 @@ function getDisplayNameFromUser(user) {
 async function continueWithUser(user) {
   currentPlayerId = user?.id || null;
   currentAuthMode = user?.is_anonymous ? "nickname" : "google";
-  currentUserEmail = user?.email || "";
 
   updateAccountUi();
   await loadRemoteSave();
@@ -605,11 +711,11 @@ async function initSupabase() {
 renderGame();
 saveLocalBackup();
 applyOfflineProgress();
-renderGame();
 updateAccountUi();
 
 if (renamePlayerButton) {
   renamePlayerButton.addEventListener("click", () => {
+    setNicknameNotice("");
     showPlayerModal();
     showNicknameForm();
   });
@@ -617,12 +723,14 @@ if (renamePlayerButton) {
 
 if (nicknameChoiceButton) {
   nicknameChoiceButton.addEventListener("click", () => {
+    setNicknameNotice("");
     showNicknameForm();
   });
 }
 
 if (backToAuthOptionsButton) {
   backToAuthOptionsButton.addEventListener("click", () => {
+    setNicknameNotice("");
     showAuthOptions();
   });
 }
@@ -660,6 +768,8 @@ if (playerForm) {
       playerError.hidden = true;
     }
 
+    setNicknameNotice("");
+
     if (!supabase) {
       return;
     }
@@ -684,8 +794,16 @@ if (playerForm) {
       activeUser = anonymousUser;
     }
 
-    currentAuthMode = "nickname";
-    setPlayerName(rawName);
+    currentPlayerId = activeUser?.id || currentPlayerId;
+    currentAuthMode = activeUser?.is_anonymous ? "nickname" : "google";
+    const uniqueName = await resolveUniquePlayerName(rawName);
+
+    setPlayerName(uniqueName);
+
+    if (uniqueName !== rawName) {
+      setNicknameNotice(`Esse nome j\u00e1 existia. Seu apelido foi salvo como ${uniqueName}.`);
+    }
+
     hidePlayerModal();
     await continueWithUser(activeUser);
   });
@@ -696,10 +814,10 @@ if (bakeButton) {
 }
 
 setInterval(() => {
-  const perSecond = getCoinsPerSecond();
+  const breadsPerSecond = getBreadsPerSecond();
 
-  if (perSecond > 0) {
-    updateEarnings(perSecond);
+  if (breadsPerSecond > 0) {
+    addBread(breadsPerSecond);
     renderGame();
   }
 }, 1000);
